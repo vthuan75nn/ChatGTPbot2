@@ -4,7 +4,8 @@ const ms = require('ms')
 
 const app = express()
 const axios = require('axios').default
-const config = require('./config.js')
+const config = require('./config.js');
+const request = require('request');
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json({
@@ -80,61 +81,94 @@ async function handlers(event) {
     switch(config.mode) {
         case'CHAT':
             const history = config.cache.get(msg.sender.id)
-
-            return axios({
-                url: `https://api.openai.com/v1/chat/completions`,
-                method: 'post',
-                data: {
-                    model: config.openai.model,
-                    messages: !history ?
-                        [
-                            {
-                                role: 'user',
-                                content: content
-                            },
-                        ] : [
-                            {
-                                role: 'user',
-                                content: history.question
-                            },
-                            {
-                                role: 'assistant',
-                                content: history.answer
-                            },
-                            {
-                                role: 'user',
-                                content: content
-                            }
-                        ],
-                    max_tokens: config.openai.max_tokens
-                },
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${config.openai.token}`
-                }
-            }).then(res => {
-                const success = res.data.choices[0].message.content
-        
+          return request({
+            "uri": "https://api.openai.com/v1/chat/completions",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${process.env.token}`
+            },
+            "method": "POST",
+            "json": {
+                model: config.openai.model,
+                messages: !history ? [
+                    { role: 'user', content: content },
+                ] : [
+                    { role: 'user', content: history.question },
+                    { role: 'assistant', content: history.answer },
+                    { role: 'user', content: content }
+                ],
+                max_tokens: config.openai.max_tokens
+            }
+        }, async (err, res, body) => {
+            if (err) throw err
+            if (!body.error) {
+                const success = body.choices[0].message.content
                 config.cache.del(msg.sender.id)
                 config.cache.set(msg.sender.id, {
                     question: content,
                     answer: success
                 }, ms('10m'))
-        
                 config.ratelimit.delete(msg.sender.id)
-                return sendMessage({
-                    psid: msg.sender.id,
-                    content: success
-                })
-            }).catch(error => {
-                console.error(error)
-                config.ratelimit.delete(msg.sender.id)
+                await sendMessage({ psid: msg.sender.id, content: success })
+            } else {
+                config.ratelimit.delete(msg.sender.id);
+                return sendMessage({ psid: msg.sender.id, content: body.error.message })
+            }
+        });
+            // return axios({
+            //     url: `https://api.openai.com/v1/chat/completions`,
+            //     method: 'post',
+            //     data: {
+            //         model: config.openai.model,
+            //         messages: !history ?
+            //             [
+            //                 {
+            //                     role: 'user',
+            //                     content: content
+            //                 },
+            //             ] : [
+            //                 {
+            //                     role: 'user',
+            //                     content: history.question
+            //                 },
+            //                 {
+            //                     role: 'assistant',
+            //                     content: history.answer
+            //                 },
+            //                 {
+            //                     role: 'user',
+            //                     content: content
+            //                 }
+            //             ],
+            //         max_tokens: config.openai.max_tokens
+            //     },
+            //     headers: {
+            //         "Content-Type": "application/json",
+            //         "Authorization": `Bearer ${process.env.token}`
+            //     }
+            // }).then(res => {
+            //     const success = res.data.choices[0].message.content
         
-                return sendMessage({
-                    psid: msg.sender.id,
-                    content: 'Có lỗi xảy ra, xin hãy kiểm tra lại.'
-                })
-            })
+            //     config.cache.del(msg.sender.id)
+            //     config.cache.set(msg.sender.id, {
+            //         question: content,
+            //         answer: success
+            //     }, ms('10m'))
+        
+            //     config.ratelimit.delete(msg.sender.id)
+            //     return sendMessage({
+            //         psid: msg.sender.id,
+            //         content: success
+            //     })
+            // }).catch(error => {
+            //     console.error(error)
+            //     config.ratelimit.delete(msg.sender.id)
+        
+            //     return sendMessage({
+            //         psid: msg.sender.id,
+            //         content: 'Có lỗi xảy ra, xin hãy kiểm tra lại.'
+            //     })
+            // })
         case'IMAGE':
             return axios({
                 url: 'https://api.openai.com/v1/images/generations',
@@ -147,16 +181,17 @@ async function handlers(event) {
                 },
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${config.openai.token}`
+                    'Authorization': `Bearer ${process.env.token}`
                 }
             }).then(res => {
+              console.log(res.body)
                 config.ratelimit.delete(msg.sender.id)
                 return sendMessage({
                     psid: msg.sender.id,
                     image: res.data.data[0].url
                 })
             }).catch(error => {
-                console.error(error)
+                // console.error(error)
                 config.ratelimit.delete(msg.sender.id)
         
                 return sendMessage({
