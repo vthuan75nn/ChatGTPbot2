@@ -96,5 +96,9 @@ ngrok http 5500
 
 ## 5. Hỗ trợ:
 - Discord: https://discord.gg/f7xUdhJ3j8
+
+## 6. Edit
 - CHÚ Ý : Đây là source đã được chỉnh sửa qua để phù hợp hơn, nó ko thuộc về chủ tài khoản github này
 - Source gốc thuộc về https://github.com/Tungchaphet/ChatGPTFacebookPage
+- Video hướng dẫn cài trên máy : https://youtu.be/BsNVh_NB8vQ
+- Người edit : Discord Eris's [người làm video trên]
