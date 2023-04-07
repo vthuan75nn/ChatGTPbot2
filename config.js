@@ -3,7 +3,7 @@ const NodeCache = require("node-cache")
 const config = {
   pageToken: process.env.pageToken, // Đưa token của fanpage của bạn vô đây.
   appSecret: '', // Cái này có thể có hoặc không, nếu có thì nó càng bảo mật.
-  verifyToken: '', // Nhập cái gì vô đây cũng được nhưng nhớ copy vào Verify Token ở mục Webhooks.
+  verifyToken: 'shinabot', // Nhập cái gì vô đây cũng được nhưng nhớ copy vào Verify Token ở mục Webhooks.
   openai: {
     model: 'gpt-3.5-turbo', // Model ChatGPT (gpt-3-turbo, gpt-3, gpt-4)
     token: "", // API Token của ChatGPT
